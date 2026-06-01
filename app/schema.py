@@ -71,6 +71,7 @@ def get_invoice_schema():
                 "description": "",
                 "packing": "",
                 "unit": "",
+                "expiry_date": "",
                 "quantity": None,
                 "unit_price": None,
                 "discount": None,
@@ -80,7 +81,8 @@ def get_invoice_schema():
                 "excise": None,
                 "total_incl_excise": None,
                 "vat_amount": None,
-                "amount": None
+                "amount": None,
+                
             }
         ],
         "summary": {

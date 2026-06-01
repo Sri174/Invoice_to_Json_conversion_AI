@@ -72,6 +72,7 @@ class GeminiProcessor:
             "5. CRITICAL: When extracting `subtotal`, `taxable_amount`, or `total_amount`, the invoice might have a total quantity listed on the same row. DO NOT extract the total quantity as the monetary value. The monetary value is ALWAYS the right-most number on that row. (e.g. if the line says 'Sub Total (AED) 20.00 607.23', the subtotal is 607.23, NOT 20.00).\n"
             "6. If a percentage is written inline with a label (e.g., 'Vat 5% 4.80'), extract the percentage (5.0) into `tax_rate_percent` or `vat_percent`, and the monetary amount (4.80) into `vat_total` or `vat_amount`.\n"
             "7. Return ONLY a valid, fully parsable JSON object. Do not include any markdown formatting (like ```json), no explanations, no greetings, and absolutely NO trailing text.\n"
+            "8. For the `quantity` field, if the quantity is listed under 'Qty/Case' or similar in a fractional format like '0/4' or '2/0', intelligently extract the actual quantity number (e.g., '0/4' means quantity is 4, '2/0' means quantity is 2). Do not output the slash string, only output the resolved numeric quantity.\n"
         )
         
         if custom_text:
