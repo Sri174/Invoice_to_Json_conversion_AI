@@ -32,6 +32,7 @@ def get_invoice_schema():
                 "order_date": "",
                 "page_number": "",
                 "purchase_order_number": "",
+                "lpo_number": "",
                 "due_date": "",
                 "payment_terms": "",
                 "personnel": {
@@ -71,6 +72,7 @@ def get_invoice_schema():
                 "description": "",
                 "packing": "",
                 "unit": "",
+                "manufacturing_date": "",
                 "expiry_date": "",
                 "quantity": None,
                 "unit_price": None,

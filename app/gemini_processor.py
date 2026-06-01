@@ -73,6 +73,7 @@ class GeminiProcessor:
             "6. If a percentage is written inline with a label (e.g., 'Vat 5% 4.80'), extract the percentage (5.0) into `tax_rate_percent` or `vat_percent`, and the monetary amount (4.80) into `vat_total` or `vat_amount`.\n"
             "7. Return ONLY a valid, fully parsable JSON object. Do not include any markdown formatting (like ```json), no explanations, no greetings, and absolutely NO trailing text.\n"
             "8. For the `quantity` field, if the quantity is listed under 'Qty/Case' or similar in a fractional format like '0/4' or '2/0', intelligently extract the actual quantity number (e.g., '0/4' means quantity is 4, '2/0' means quantity is 2). Do not output the slash string, only output the resolved numeric quantity.\n"
+            "9. Ensure `lpo_number` is correctly captured if a 'Local Purchase Order' or 'LPO' is mentioned. For date fields like `manufacturing_date` (MFG) and `expiry_date` (EXP), resolve dates accurately even if they are abbreviated.\n"
         )
         
         if custom_text:
