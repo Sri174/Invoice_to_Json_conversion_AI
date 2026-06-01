@@ -11,4 +11,9 @@ export API_URL="http://127.0.0.1:8001/process"
 # 3. Start Streamlit on the public port provided by Render
 # Render assigns a random port and injects it into the $PORT variable
 echo "Starting Streamlit frontend..."
-streamlit run ui.py --server.port $PORT --server.address 0.0.0.0
+streamlit run ui.py \
+    --server.port $PORT \
+    --server.address 0.0.0.0 \
+    --server.headless true \
+    --server.enableCORS false \
+    --server.enableXsrfProtection false
