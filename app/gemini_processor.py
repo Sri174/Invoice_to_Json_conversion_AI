@@ -15,16 +15,14 @@ class GeminiProcessor:
         from dotenv import load_dotenv
         load_dotenv(override=True)
         
-        # Configure Gemini API key(s)
-        api_keys_env = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY", "")
-        self.api_keys = [k.strip() for k in api_keys_env.split(",") if k.strip()]
+        # Configure Gemini API key
+        api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY", "")
         
-        if not self.api_keys:
+        if not api_key:
             logger.error("No API keys found in GOOGLE_API_KEY or GEMINI_API_KEY environment variables.")
             raise ValueError("API Key is missing! Please set GOOGLE_API_KEY in your Render Environment Variables.")
         
-        self.current_key_index = 0
-        self.client = genai.Client(api_key=self.api_keys[self.current_key_index])
+        self.client = genai.Client(api_key=api_key)
         
         # Using the latest lite model supported by google-genai
         self.model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
@@ -125,13 +123,6 @@ class GeminiProcessor:
                 except Exception as e:
                     error_msg = str(e).lower()
                     if "503" in error_msg or "429" in error_msg or "unavailable" in error_msg:
-                        # API Key Rotation Logic
-                        if "429" in error_msg and len(self.api_keys) > 1:
-                            logger.warning(f"Rate limit exceeded on key index {self.current_key_index}. Rotating API key...")
-                            self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
-                            self.client = genai.Client(api_key=self.api_keys[self.current_key_index])
-                            continue # Retry immediately with new key
-                            
                         if attempt < max_retries - 1:
                             wait_time = base_wait * (2 ** attempt)
                             logger.warning(f"Gemini API busy: {e}. Retrying in {wait_time}s...")
