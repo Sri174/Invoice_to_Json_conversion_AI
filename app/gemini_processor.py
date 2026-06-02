@@ -15,12 +15,15 @@ class GeminiProcessor:
         from dotenv import load_dotenv
         load_dotenv(override=True)
         
-        # Configure Gemini API key
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
+        # Configure Gemini API key(s)
+        api_keys_env = os.getenv("GOOGLE_API_KEY", "")
+        self.api_keys = [k.strip() for k in api_keys_env.split(",") if k.strip()]
+        
+        if not self.api_keys:
             logger.warning("GOOGLE_API_KEY not found in environment. Gemini processing may fail.")
         
-        self.client = genai.Client(api_key=api_key)
+        self.current_key_index = 0
+        self.client = genai.Client(api_key=self.api_keys[self.current_key_index]) if self.api_keys else None
         
         # Using the latest lite model supported by google-genai
         self.model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
@@ -121,6 +124,13 @@ class GeminiProcessor:
                 except Exception as e:
                     error_msg = str(e).lower()
                     if "503" in error_msg or "429" in error_msg or "unavailable" in error_msg:
+                        # API Key Rotation Logic
+                        if "429" in error_msg and len(self.api_keys) > 1:
+                            logger.warning(f"Rate limit exceeded on key index {self.current_key_index}. Rotating API key...")
+                            self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+                            self.client = genai.Client(api_key=self.api_keys[self.current_key_index])
+                            continue # Retry immediately with new key
+                            
                         if attempt < max_retries - 1:
                             wait_time = base_wait * (2 ** attempt)
                             logger.warning(f"Gemini API busy: {e}. Retrying in {wait_time}s...")
@@ -130,15 +140,21 @@ class GeminiProcessor:
             
             result_text = response.text
             
-            # Log token usage
+            # Log and format token usage
+            usage_data = None
             if response.usage_metadata:
-                logger.info(
-                    f"Gemini Token Usage: {response.usage_metadata.model_dump_json() if hasattr(response.usage_metadata, 'model_dump_json') else response.usage_metadata}"
-                )
+                usage_data = {
+                    "prompt_token_count": response.usage_metadata.prompt_token_count,
+                    "candidates_token_count": response.usage_metadata.candidates_token_count,
+                    "total_token_count": response.usage_metadata.total_token_count
+                }
+                logger.info(f"Gemini Token Usage: {usage_data}")
             
             # Safely parse JSON
             try:
                 parsed_json = json.loads(result_text)
+                if usage_data:
+                    parsed_json["_tokens"] = usage_data
                 return parsed_json
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse Gemini output as JSON: {result_text}")
@@ -157,7 +173,10 @@ class GeminiProcessor:
                 if start_idx != -1 and end_idx != -1:
                     clean_text = clean_text[start_idx:end_idx+1]
                 
-                return json.loads(clean_text)
+                parsed_json = json.loads(clean_text)
+                if usage_data:
+                    parsed_json["_tokens"] = usage_data
+                return parsed_json
                 
         except Exception as e:
             logger.error(f"Error during Gemini processing: {str(e)}")
