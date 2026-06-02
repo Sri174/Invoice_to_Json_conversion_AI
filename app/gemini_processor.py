@@ -16,11 +16,9 @@ class GeminiProcessor:
         load_dotenv(override=True)
         
         # Configure Gemini API key
-        api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY", "")
-        
+        api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
-            logger.error("No API keys found in GOOGLE_API_KEY or GEMINI_API_KEY environment variables.")
-            raise ValueError("API Key is missing! Please set GOOGLE_API_KEY in your Render Environment Variables.")
+            logger.warning("GOOGLE_API_KEY not found in environment. Gemini processing may fail.")
         
         self.client = genai.Client(api_key=api_key)
         
@@ -132,21 +130,24 @@ class GeminiProcessor:
             
             result_text = response.text
             
-            # Log and format token usage
-            usage_data = None
+            # Log token usage
             if response.usage_metadata:
-                usage_data = {
-                    "prompt_token_count": response.usage_metadata.prompt_token_count,
-                    "candidates_token_count": response.usage_metadata.candidates_token_count,
-                    "total_token_count": response.usage_metadata.total_token_count
-                }
-                logger.info(f"Gemini Token Usage: {usage_data}")
+                logger.info(
+                    f"Gemini Token Usage: {response.usage_metadata.model_dump_json() if hasattr(response.usage_metadata, 'model_dump_json') else response.usage_metadata}"
+                )
             
             # Safely parse JSON
             try:
                 parsed_json = json.loads(result_text)
-                if usage_data:
-                    parsed_json["_tokens"] = usage_data
+                
+                # Inject token usage metadata into the response
+                if response.usage_metadata:
+                    parsed_json["_usage_metadata"] = {
+                        "prompt_token_count": getattr(response.usage_metadata, "prompt_token_count", 0),
+                        "candidates_token_count": getattr(response.usage_metadata, "candidates_token_count", 0),
+                        "total_token_count": getattr(response.usage_metadata, "total_token_count", 0)
+                    }
+                
                 return parsed_json
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse Gemini output as JSON: {result_text}")
@@ -165,10 +166,7 @@ class GeminiProcessor:
                 if start_idx != -1 and end_idx != -1:
                     clean_text = clean_text[start_idx:end_idx+1]
                 
-                parsed_json = json.loads(clean_text)
-                if usage_data:
-                    parsed_json["_tokens"] = usage_data
-                return parsed_json
+                return json.loads(clean_text)
                 
         except Exception as e:
             logger.error(f"Error during Gemini processing: {str(e)}")

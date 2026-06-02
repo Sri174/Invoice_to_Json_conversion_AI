@@ -111,15 +111,18 @@ if 'result_data' in st.session_state:
     st.markdown("---")
     st.markdown("### ✨ Extraction Results")
     
-    result_data = st.session_state['result_data']
-    tokens = result_data.get('_tokens')
-    token_html = f"<br><br><small style='color: #4b6e55;'>🪙 <b>Token Usage:</b> {tokens['prompt_token_count']} (Input) &nbsp;|&nbsp; {tokens['candidates_token_count']} (Output) &nbsp;|&nbsp; <b>{tokens['total_token_count']} (Total)</b></small>" if tokens else ""
-    
     st.markdown(f"""
     <div class='success-box'>
-        <strong>✅ Successfully processed</strong> {st.session_state['filename']} in {st.session_state['elapsed_time']} seconds.{token_html}
+        <strong>✅ Successfully processed</strong> {st.session_state['filename']} in {st.session_state['elapsed_time']} seconds.
     </div>
     """, unsafe_allow_html=True)
+    
+    result_data = st.session_state['result_data']
+    
+    # Display token usage if available
+    usage = result_data.get("_usage_metadata")
+    if usage:
+        st.info(f"🪙 **Tokens Used:** {usage.get('total_token_count', 0)} (Prompt: {usage.get('prompt_token_count', 0)} | Completion: {usage.get('candidates_token_count', 0)})")
     
     # Download Button
     result_json_str = json.dumps(result_data, indent=4)
