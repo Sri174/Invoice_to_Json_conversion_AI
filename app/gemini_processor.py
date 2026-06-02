@@ -16,14 +16,15 @@ class GeminiProcessor:
         load_dotenv(override=True)
         
         # Configure Gemini API key(s)
-        api_keys_env = os.getenv("GOOGLE_API_KEY", "")
+        api_keys_env = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY", "")
         self.api_keys = [k.strip() for k in api_keys_env.split(",") if k.strip()]
         
         if not self.api_keys:
-            logger.warning("GOOGLE_API_KEY not found in environment. Gemini processing may fail.")
+            logger.error("No API keys found in GOOGLE_API_KEY or GEMINI_API_KEY environment variables.")
+            raise ValueError("API Key is missing! Please set GOOGLE_API_KEY in your Render Environment Variables.")
         
         self.current_key_index = 0
-        self.client = genai.Client(api_key=self.api_keys[self.current_key_index]) if self.api_keys else None
+        self.client = genai.Client(api_key=self.api_keys[self.current_key_index])
         
         # Using the latest lite model supported by google-genai
         self.model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
